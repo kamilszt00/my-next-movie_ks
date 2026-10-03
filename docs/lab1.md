@@ -1,6 +1,6 @@
 # Lab 1: podstawy SwiftUI
 
-Na tych zajęciach budujesz ekran główny z siatką filmów i ekran szczegółów filmu. Dane są przykładowe, z `Services/SampleMovies.swift`. Prawdziwe dane z TMDB dojdą na drugich zajęciach.
+Na tych zajęciach budujesz ekran główny z siatką filmów i ekran szczegółów filmu. Dane są przykładowe, z `Services/SampleMovies.swift`. Prawdziwe dane z TMDB dojdą na kolejnych zajęciach.
 
 1. Wykonaj kroki z sekcji **Start** w [README](../README.md).
 2. Uruchom aplikację (⌘R). Na ekranie widać tylko tytuł zamiast siatki. Tak ma być.

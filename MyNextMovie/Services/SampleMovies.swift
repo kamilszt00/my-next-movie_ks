@@ -4,6 +4,10 @@ func loadSampleMovies() async throws -> [Movie] {
     return sampleMovies
 }
 
+func searchSampleMovies(query: String, genreId: Int) async throws -> [Movie] {
+    return filterMovies(sampleMovies, query: query, genreId: genreId)
+}
+
 let sampleMovies: [Movie] = [
     Movie(
         id: 603,

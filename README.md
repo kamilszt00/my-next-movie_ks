@@ -10,8 +10,8 @@ Aplikacja rekomenduje filmy. Dane pochodzą z TMDB, konto i zapisane filmy z Sup
 MyNextMovie/
   Models/        Movie, gatunki i funkcje pomocnicze
   Services/      MovieLoader, przykładowe filmy
-  ViewModels/    stan ekranu listy
-  Views/         lista i szczegóły filmu, Components/ ze wspólnymi elementami
+  ViewModels/    stan ekranów listy i wyszukiwania
+  Views/         lista, wyszukiwanie i szczegóły filmu, Components/ ze wspólnymi elementami
   Config/        odczyt kluczy API
 MyNextMovieTests/        testy jednostkowe (Swift Testing)
 docs/                    zadania na kolejne laboratoria
@@ -23,7 +23,10 @@ Architektura: SwiftUI + MVVM. Nowe pliki dodane do folderów `MyNextMovie/` i `M
 
 ## Zadania
 
-Zadania na każde zajęcia są w folderze `docs/`. Zaczynasz od [docs/lab1.md](docs/lab1.md).
+Zadania na każde zajęcia są w folderze `docs/`:
+
+- [Lab 1: podstawy SwiftUI](docs/lab1.md)
+- [Lab 2: ekran wyszukiwania](docs/lab2.md)
 
 Miejsca do uzupełnienia oznacza komentarz `// TODO: Lab N`. Listę wszystkich znajdziesz w Xcode: Find Navigator (⌘⇧F), szukaj `TODO: Lab`.
 
