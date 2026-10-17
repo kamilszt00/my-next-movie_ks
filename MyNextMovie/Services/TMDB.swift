@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 
 // MARK: - Constants
 
@@ -22,6 +23,9 @@ let httpStatusOK = 200
 let httpStatusUnauthorized = 401
 
 let missingTMDBAPIKeyMessage = "Missing TMDB API key. Add it to Config/Secrets.xcconfig."
+
+let popularMoviesCacheKey = "popular"
+let movieDetailsCacheKeyPrefix = "movie/"
 
 // MARK: - Types
 
@@ -123,6 +127,25 @@ func searchTMDBMovies(query: String, genreId: Int) async throws -> [Movie] {
 func fetchMovieDetails(movieId: Int) async throws -> MovieDetails {
     let apiKey = try requireTMDBAPIKey()
     let data = try await fetchTMDBData(tmdbMovieDetailsURL(movieId: movieId, apiKey: apiKey))
+    return try decodeTMDBMovieDetails(data)
+}
+
+/// Popular movies with offline fallback to the last cached response.
+func loadPopularMovies(cache: ModelContext) async throws -> [Movie] {
+    let apiKey = try requireTMDBAPIKey()
+    let data = try await fetchWithCacheFallback(cache, key: popularMoviesCacheKey) {
+        try await fetchTMDBData(tmdbPopularURL(apiKey: apiKey))
+    }
+    return try decodeTMDBMovies(data)
+}
+
+/// Movie details with offline fallback to the last cached response.
+func loadTMDBMovieDetails(movieId: Int, cache: ModelContext) async throws -> MovieDetails {
+    let apiKey = try requireTMDBAPIKey()
+    let cacheKey = movieDetailsCacheKeyPrefix + String(movieId)
+    let data = try await fetchWithCacheFallback(cache, key: cacheKey) {
+        try await fetchTMDBData(tmdbMovieDetailsURL(movieId: movieId, apiKey: apiKey))
+    }
     return try decodeTMDBMovieDetails(data)
 }
 

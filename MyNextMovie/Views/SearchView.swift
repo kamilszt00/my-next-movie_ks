@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 /// How long to wait after the last keystroke before searching.
@@ -7,9 +8,12 @@ private let searchResultThumbnailWidth: CGFloat = 56
 private let searchResultTitleMaxLines = 2
 private let searchInputKeySeparator = "|"
 
+private let symbolNameHistory = "clock.arrow.circlepath"
+
 struct SearchView: View {
     @State private var viewModel: SearchViewModel
     private let loadDetails: MovieDetailsLoader
+    @Environment(\.modelContext) private var modelContext
 
     init(viewModel: SearchViewModel, loadDetails: @escaping MovieDetailsLoader) {
         _viewModel = State(initialValue: viewModel)
@@ -24,6 +28,9 @@ struct SearchView: View {
             }
             .navigationTitle("Search")
             .searchable(text: $viewModel.query, prompt: "Title or keyword")
+            .onSubmit(of: .search) {
+                recordSearch(modelContext, query: viewModel.query, now: Date())
+            }
             .navigationDestination(for: Movie.self) { movie in
                 MovieDetailView(movie: movie, loadDetails: loadDetails)
             }
@@ -41,11 +48,7 @@ struct SearchView: View {
     private var content: some View {
         switch viewModel.state {
         case .idle:
-            ContentUnavailableView(
-                "Find a movie",
-                systemImage: symbolNameSearch,
-                description: Text("Search by title or keyword, or pick a genre.")
-            )
+            SearchStartView(selectQuery: selectQuery)
         case .loading:
             ProgressView()
         case .loaded:
@@ -64,6 +67,63 @@ struct SearchView: View {
             return
         }
         await viewModel.search()
+    }
+
+    private func selectQuery(_ query: String) {
+        viewModel.query = query
+        recordSearch(modelContext, query: query, now: Date())
+    }
+}
+
+/// Shown when the user has not searched yet.
+/// Pokazuje historię wyszukiwań albo komunikat zachęcający, gdy historia jest pusta.
+private struct SearchStartView: View {
+    let selectQuery: (String) -> Void
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \SearchHistoryEntry.searchedAt, order: .reverse)
+    private var searchHistory: [SearchHistoryEntry]
+
+    var body: some View {
+        if searchHistory.isEmpty {
+            ContentUnavailableView(
+                "Find a movie",
+                systemImage: symbolNameSearch,
+                description: Text("Search by title or keyword, or pick a genre.")
+            )
+        } else {
+            historyList
+        }
+    }
+
+    private var historyList: some View {
+        List {
+            Section {
+                ForEach(searchHistory) { entry in
+                    historyRow(for: entry)
+                }
+            } header: {
+                sectionHeader
+            }
+        }
+        .listStyle(.plain)
+    }
+
+    private var sectionHeader: some View {
+        HStack {
+            Text("Recent Searches")
+            Spacer()
+            Button("Clear") { clearSearchHistory(modelContext) }
+                .textCase(nil)
+        }
+    }
+
+    private func historyRow(for entry: SearchHistoryEntry) -> some View {
+        Button {
+            selectQuery(entry.query)
+        } label: {
+            Label(entry.query, systemImage: symbolNameHistory)
+        }
+        .foregroundStyle(.primary)
     }
 }
 
@@ -161,4 +221,5 @@ private struct SearchResultRow: View {
         viewModel: SearchViewModel(searchMovies: searchTMDBMovies),
         loadDetails: fetchMovieDetails
     )
+    .modelContainer(for: storedModelTypes, inMemory: true)
 }
