@@ -13,10 +13,16 @@ private struct RootView: View {
     var body: some View {
         TabView {
             Tab("Movies", systemImage: symbolNameMovies) {
-                MovieListView(viewModel: MovieListViewModel(loadMovies: loadSampleMovies))
+                MovieListView(
+                    viewModel: MovieListViewModel(loadMovies: fetchPopularMovies),
+                    loadDetails: fetchMovieDetails
+                )
             }
             Tab("Search", systemImage: symbolNameSearch, role: .search) {
-                SearchView(viewModel: SearchViewModel(searchMovies: searchSampleMovies))
+                SearchView(
+                    viewModel: SearchViewModel(searchMovies: searchTMDBMovies),
+                    loadDetails: fetchMovieDetails
+                )
             }
         }
     }

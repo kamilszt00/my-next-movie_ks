@@ -2,18 +2,25 @@ import SwiftUI
 
 private let gridMinimumColumnWidth: CGFloat = 150
 
+private let placeholderMovieCount = 6
+private let placeholderMovieTitle = "Movie title"
+
 struct MovieListView: View {
     @State private var viewModel: MovieListViewModel
+    private let loadDetails: MovieDetailsLoader
 
-    init(viewModel: MovieListViewModel) {
+    init(viewModel: MovieListViewModel, loadDetails: @escaping MovieDetailsLoader) {
         _viewModel = State(initialValue: viewModel)
+        self.loadDetails = loadDetails
     }
 
     var body: some View {
         NavigationStack {
             content
                 .navigationTitle("My Next Movie")
-                .navigationDestination(for: Movie.self) { movie in MovieDetailView(movie: movie) }
+                .navigationDestination(for: Movie.self) { movie in
+                    MovieDetailView(movie: movie, loadDetails: loadDetails)
+                }
         }
         .task { await viewModel.loadIfNeeded() }
     }
@@ -32,9 +39,9 @@ struct MovieListView: View {
         }
     }
 
-    /// Sample movies drawn as gray shapes while the real ones load.
+    /// Empty movies drawn as gray shapes while the real ones load.
     private var loadingGrid: some View {
-        MovieGrid(title: "Popular", movies: sampleMovies)
+        MovieGrid(title: "Popular", movies: makePlaceholderMovies())
             .redacted(reason: .placeholder)
             .allowsHitTesting(false)
     }
@@ -76,6 +83,24 @@ private struct MovieGrid: View {
     }
 }
 
+private func makePlaceholderMovies() -> [Movie] {
+    var placeholders: [Movie] = []
+    for index in 0..<placeholderMovieCount {
+        placeholders.append(
+            Movie(
+                id: index,
+                title: placeholderMovieTitle,
+                overview: "",
+                releaseDate: "",
+                posterPath: nil,
+                voteAverage: 0,
+                genreIds: []
+            )
+        )
+    }
+    return placeholders
+}
+
 /// One cell of the grid. Tapping it opens the movie details.
 private struct MovieGridItem: View {
     let movie: Movie
@@ -89,5 +114,8 @@ private struct MovieGridItem: View {
 }
 
 #Preview {
-    MovieListView(viewModel: MovieListViewModel(loadMovies: loadSampleMovies))
+    MovieListView(
+        viewModel: MovieListViewModel(loadMovies: fetchPopularMovies),
+        loadDetails: fetchMovieDetails
+    )
 }
