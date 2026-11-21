@@ -18,14 +18,47 @@ func isMovieSaved(_ context: ModelContext, movieId: Int) -> Bool {
 }
 
 /// Saves the movie, or removes it when it is already saved.
+/// Removing a movie the account has leaves a `RemovedSavedMovie` mark for the next sync.
+/// Saving it again keeps the mark, so sync replaces the account row and its save date.
 func toggleSavedMovie(_ context: ModelContext, _ movie: Movie, now: Date) {
     let existingCopies = fetchSavedMovies(context, movieId: movie.id)
     if existingCopies.isEmpty {
-        context.insert(SavedMovie(movie: movie, savedAt: now))
-    } else {
-        for saved in existingCopies {
-            context.delete(saved)
+        context.insert(SavedMovie(movie: movie, savedAt: now, isInCloud: false))
+        return
+    }
+    for saved in existingCopies {
+        if saved.isInCloud {
+            markMovieRemoved(context, movieId: saved.movieId)
         }
+        context.delete(saved)
+    }
+}
+
+/// Marks of movies removed on the device: empty when the movie has no mark, one otherwise.
+func fetchRemovedMarks(_ context: ModelContext, movieId: Int) -> [RemovedSavedMovie] {
+    let descriptor = FetchDescriptor<RemovedSavedMovie>(
+        predicate: #Predicate { removed in removed.movieId == movieId }
+    )
+    return (try? context.fetch(descriptor)) ?? []
+}
+
+/// Leaves a mark that the movie has to be removed from the account.
+func markMovieRemoved(_ context: ModelContext, movieId: Int) {
+    if fetchRemovedMarks(context, movieId: movieId).isEmpty {
+        context.insert(RemovedSavedMovie(movieId: movieId))
+    }
+}
+
+/// Removes saved movies and removal marks from the device after signing out.
+/// The account keeps its movies.
+func clearSavedMovies(_ context: ModelContext) {
+    let savedMovies = (try? context.fetch(FetchDescriptor<SavedMovie>())) ?? []
+    for saved in savedMovies {
+        context.delete(saved)
+    }
+    let removedMarks = (try? context.fetch(FetchDescriptor<RemovedSavedMovie>())) ?? []
+    for mark in removedMarks {
+        context.delete(mark)
     }
 }
 

@@ -15,7 +15,7 @@ final class SavedMovie {
     var savedAt: Date
     var isInCloud: Bool = false
 
-    init(movie: Movie, savedAt: Date) {
+    init(movie: Movie, savedAt: Date, isInCloud: Bool) {
         self.movieId = movie.id
         self.title = movie.title
         self.overview = movie.overview
@@ -24,7 +24,19 @@ final class SavedMovie {
         self.voteAverage = movie.voteAverage
         self.genreIds = movie.genreIds
         self.savedAt = savedAt
-        self.isInCloud = false
+        self.isInCloud = isInCloud
+    }
+}
+
+/// A movie removed on the device but not yet from the account.
+/// A movie removed and saved again before a sync is in both, until the sync
+/// replaces the old account row with the new one.
+@Model
+final class RemovedSavedMovie {
+    @Attribute(.unique) var movieId: Int
+
+    init(movieId: Int) {
+        self.movieId = movieId
     }
 }
 
@@ -58,6 +70,7 @@ final class CachedResponse {
 /// Every SwiftData model in the app, passed to `modelContainer` and tests.
 let storedModelTypes: [any PersistentModel.Type] = [
     SavedMovie.self,
+    RemovedSavedMovie.self,
     SearchHistoryEntry.self,
     CachedResponse.self,
 ]
