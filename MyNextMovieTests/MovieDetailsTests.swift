@@ -31,8 +31,8 @@ private let matrixDetailsJSON = """
                 {
                     "iso_3166_1": "PL",
                     "release_dates": [
-                        {"certification": ""},
-                        {"certification": "16"}
+                        {"certification": "", "release_date": "1999-06-23T00:00:00.000Z", "type": 3},
+                        {"certification": "16", "release_date": "1999-06-23T00:00:00.000Z", "type": 3}
                     ]
                 }
             ]
@@ -165,13 +165,19 @@ struct MovieDetailsTests {
             CountryReleaseDates(
                 countryCode: "PL",
                 releaseDates: [
-                    ReleaseDate(certification: ""),
-                    ReleaseDate(certification: "16"),
+                    ReleaseDate(
+                        certification: "", releaseDate: "1999-06-23T00:00:00.000Z",
+                        type: releaseTypeTheatrical),
+                    ReleaseDate(
+                        certification: "16", releaseDate: "1999-06-23T00:00:00.000Z",
+                        type: releaseTypeTheatrical),
                 ]),
             CountryReleaseDates(
                 countryCode: "US",
                 releaseDates: [
-                    ReleaseDate(certification: "R")
+                    ReleaseDate(
+                        certification: "R", releaseDate: "1999-06-23T00:00:00.000Z",
+                        type: releaseTypeTheatrical)
                 ]),
         ]
         let details = makeMovieDetails(releaseDates: releases)
@@ -221,7 +227,9 @@ struct MovieDetailsTests {
             CountryReleaseDates(
                 countryCode: "PL",
                 releaseDates: [
-                    ReleaseDate(certification: "16")
+                    ReleaseDate(
+                        certification: "16", releaseDate: "1999-06-23T00:00:00.000Z",
+                        type: releaseTypeTheatrical)
                 ])
         ]
         let details = makeMovieDetails(runtime: 136, releaseDates: releases)
@@ -263,4 +271,68 @@ func makeMovieDetails(
         watchProviders: WatchProviderList(results: watchProviders),
         recommendations: TMDBMoviePage(results: recommendations)
     )
+}
+
+/// Friday, 6 November 2026, midnight UTC.
+private let inCinemasToday = Date(timeIntervalSince1970: 1_793_923_200)
+
+@MainActor
+private func detailsWithRelease(
+    _ releaseDate: String,
+    type: Int = releaseTypeTheatrical,
+    countryCode: String = "PL"
+) -> MovieDetails {
+    let release = ReleaseDate(certification: "", releaseDate: releaseDate, type: type)
+    let country = CountryReleaseDates(countryCode: countryCode, releaseDates: [release])
+    return makeMovieDetails(releaseDates: [country])
+}
+
+@MainActor
+struct InCinemasTests {
+    @Test func recentCinemaPremiereIsInCinemas() {
+        let details = detailsWithRelease("2026-10-17T00:00:00.000Z")
+
+        #expect(isInCinemas(details, regionCode: "PL", today: inCinemasToday))
+        #expect(daysSinceReleaseDay("2026-10-17T00:00:00.000Z", today: inCinemasToday) == 20)
+    }
+
+    @Test func limitedReleaseCountsToo() {
+        let details = detailsWithRelease(
+            "2026-10-17T00:00:00.000Z", type: releaseTypeTheatricalLimited)
+
+        #expect(isInCinemas(details, regionCode: "PL", today: inCinemasToday))
+    }
+
+    @Test func oldPremiereIsNotInCinemas() {
+        // 43 days before today, one day after the typical run.
+        let details = detailsWithRelease("2026-09-24T00:00:00.000Z")
+
+        #expect(!isInCinemas(details, regionCode: "PL", today: inCinemasToday))
+    }
+
+    @Test func futurePremiereIsNotInCinemasYet() {
+        let details = detailsWithRelease("2026-11-20T00:00:00.000Z")
+
+        #expect(!isInCinemas(details, regionCode: "PL", today: inCinemasToday))
+        #expect(daysSinceReleaseDay("2026-11-20T00:00:00.000Z", today: inCinemasToday) == -1)
+    }
+
+    @Test func digitalReleaseIsNotCinema() {
+        let details = detailsWithRelease("2026-10-17T00:00:00.000Z", type: 4)
+
+        #expect(!isInCinemas(details, regionCode: "PL", today: inCinemasToday))
+    }
+
+    @Test func premiereInAnotherCountryDoesNotCount() {
+        let details = detailsWithRelease("2026-10-17T00:00:00.000Z", countryCode: "US")
+
+        #expect(!isInCinemas(details, regionCode: "PL", today: inCinemasToday))
+    }
+
+    @Test func unreadableDateIsNotInCinemas() {
+        let details = detailsWithRelease("soon")
+
+        #expect(!isInCinemas(details, regionCode: "PL", today: inCinemasToday))
+        #expect(daysSinceReleaseDay("soon", today: inCinemasToday) == -1)
+    }
 }

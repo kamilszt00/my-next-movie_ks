@@ -11,6 +11,7 @@ private let posterShadowOffset: CGFloat = 10
 struct MovieDetailView: View {
     let movie: Movie
     @State private var viewModel: MovieDetailViewModel
+    @State private var isShowingCinemas = false
 
     init(movie: Movie, loadDetails: @escaping MovieDetailsLoader) {
         self.movie = movie
@@ -25,6 +26,7 @@ struct MovieDetailView: View {
                 MovieBackdrop(movie: movie)
                 MovieInfo(movie: movie, details: viewModel.details)
                     .padding(.horizontal)
+                nowInCinemas.padding(.horizontal)
                 sectionsForState.padding(.horizontal)
             }
             .padding(.bottom, spacingHuge)
@@ -33,6 +35,43 @@ struct MovieDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { SaveMovieButton(movie: movie) }
         .task { await viewModel.loadIfNeeded() }
+        .sheet(isPresented: $isShowingCinemas) { cinemaMap }
+    }
+
+    @ViewBuilder
+    private var nowInCinemas: some View {
+        if isInCinemas(viewModel.details, regionCode: watchRegionCode, today: Date.now) {
+            cinemasButton
+        }
+    }
+
+    private var cinemasButton: some View {
+        VStack(alignment: .leading, spacing: spacingSmall) {
+            Button(action: showCinemas) { cinemasButtonLabel }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+            Text("See the cinemas near you. Showtimes are on each cinema's website.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var cinemasButtonLabel: some View {
+        Label("Now in Cinemas", systemImage: symbolNameCinema)
+            .frame(maxWidth: .infinity)
+    }
+
+    private func showCinemas() {
+        isShowingCinemas = true
+    }
+
+    private var cinemaMap: some View {
+        let viewModel = CinemaMapViewModel(
+            cinemas: wroclawCinemas,
+            findUserLocation: findUserLocation,
+            lastKnownLocation: lastKnownUserLocation
+        )
+        return CinemaMapView(viewModel: viewModel, findRoute: findMapKitRoute, placement: .sheet)
     }
 
     @ViewBuilder

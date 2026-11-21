@@ -11,6 +11,9 @@ private let youtubeSite = "YouTube"
 private let trailerType = "Trailer"
 
 private let minutesPerHour = 60
+/// "2026-10-17" at the start of "2026-10-17T00:00:00.000Z".
+private let releaseDayLength = 10
+private let notReleasedYet = -1
 private let defaultRegionCode = "PL"
 
 /// Country from the phone settings, falls back to Poland when unknown.
@@ -86,7 +89,14 @@ nonisolated struct CountryReleaseDates: Decodable {
 
 nonisolated struct ReleaseDate: Decodable {
     let certification: String
+    let releaseDate: String  // "2026-10-17T00:00:00.000Z"
+    let type: Int  // 2 and 3 are a cinema premiere
 }
+
+let releaseTypeTheatricalLimited = 2
+let releaseTypeTheatrical = 3
+/// A movie usually plays in cinemas for about six weeks.
+let typicalCinemaRunInDays = 42
 
 nonisolated struct WatchProviderList: Decodable {
     let results: [String: CountryWatchProviders]
@@ -219,6 +229,42 @@ func movieFactsLine(_ movie: Movie, _ details: MovieDetails, regionCode: String)
     }
 
     return parts.joined(separator: textSeparator)
+}
+
+// MARK: - In cinemas
+
+/// True when the movie had a cinema premiere in the country at most
+/// `typicalCinemaRunInDays` days before today. TMDB has no showtimes, only premieres.
+func isInCinemas(_ details: MovieDetails, regionCode: String, today: Date) -> Bool {
+    for country in details.releaseDates.results where country.countryCode == regionCode {
+        for release in country.releaseDates where isCinemaRelease(release) {
+            let days = daysSinceReleaseDay(release.releaseDate, today: today)
+            if days >= 0 && days <= typicalCinemaRunInDays {
+                return true
+            }
+        }
+    }
+    return false
+}
+
+/// Whole days from the release day to today, -1 for an unreadable or future date.
+func daysSinceReleaseDay(_ releaseDate: String, today: Date) -> Int {
+    let day = String(releaseDate.prefix(releaseDayLength))
+    let dayStyle = Date.ISO8601FormatStyle().year().month().day()
+    guard let releaseDay = try? dayStyle.parse(day) else {
+        return notReleasedYet
+    }
+    // TMDB days are in UTC, so today is counted in UTC too.
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = .gmt
+    let todayStart = calendar.startOfDay(for: today)
+    let components = calendar.dateComponents([.day], from: releaseDay, to: todayStart)
+    let days = components.day ?? notReleasedYet
+    return days < 0 ? notReleasedYet : days
+}
+
+private func isCinemaRelease(_ release: ReleaseDate) -> Bool {
+    return release.type == releaseTypeTheatricalLimited || release.type == releaseTypeTheatrical
 }
 
 // MARK: - Watch providers

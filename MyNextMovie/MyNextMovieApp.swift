@@ -107,6 +107,9 @@ private struct AppTabs: View {
             Tab("Saved", systemImage: symbolNameSaved) {
                 SavedMoviesView(loadDetails: loadDetails)
             }
+            Tab("Cinemas", systemImage: symbolNameCinema) {
+                cinemaMap
+            }
             Tab("Account", systemImage: symbolNameAccount) {
                 AccountView(viewModel: account)
             }
@@ -121,6 +124,15 @@ private struct AppTabs: View {
             viewModel: MovieListViewModel(loadMovies: loadPopularMovies),
             loadDetails: loadDetails
         )
+    }
+
+    private var cinemaMap: some View {
+        let viewModel = CinemaMapViewModel(
+            cinemas: wroclawCinemas,
+            findUserLocation: findUserLocation,
+            lastKnownLocation: lastKnownUserLocation
+        )
+        return CinemaMapView(viewModel: viewModel, findRoute: findMapKitRoute, placement: .tab)
     }
 
     private var searchTab: some View {

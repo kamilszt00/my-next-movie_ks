@@ -71,6 +71,14 @@ let testMovies: [Movie] = [
     ),
 ]
 
+/// The Matrix premiered in Polish cinemas in 1999, long out of cinemas.
+@MainActor
+private let matrixPolishRelease = ReleaseDate(
+    certification: "16",
+    releaseDate: "1999-06-23T00:00:00.000Z",
+    type: releaseTypeTheatrical
+)
+
 @MainActor
 let testMovieDetails = MovieDetails(
     id: 603,
@@ -90,7 +98,7 @@ let testMovieDetails = MovieDetails(
     releaseDates: ReleaseDateList(results: [
         CountryReleaseDates(
             countryCode: "PL",
-            releaseDates: [ReleaseDate(certification: "16")]
+            releaseDates: [matrixPolishRelease]
         )
     ]),
     watchProviders: WatchProviderList(results: [:]),

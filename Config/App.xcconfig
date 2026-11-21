@@ -31,3 +31,6 @@ SUPABASE_URL =
 SUPABASE_ANON_KEY =
 
 #include? "Secrets.xcconfig"
+
+// Lab 6: without this iOS does not ask for the location, and the app closes.
+INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = My Next Movie shows the cinemas near you on the map.

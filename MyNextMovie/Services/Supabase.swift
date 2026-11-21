@@ -25,7 +25,10 @@ private func requireSupabaseClient() throws -> SupabaseClient {
     guard let url = URL(string: supabaseURL()), url.host != nil, !key.isEmpty else {
         throw SupabaseError(message: "Missing Supabase keys. Add them to Config/Secrets.xcconfig.")
     }
-    let client = SupabaseClient(supabaseURL: url, supabaseKey: key)
+    // Opts in to the next major version's behavior and silences its warning in the console.
+    // The app reads `currentUser`, so this does not change who is signed in.
+    let options = SupabaseClientOptions(auth: .init(emitLocalSessionAsInitialSession: true))
+    let client = SupabaseClient(supabaseURL: url, supabaseKey: key, options: options)
     supabaseClient = client
     return client
 }
